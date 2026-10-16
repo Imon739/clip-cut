@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Micro-Expression Video Annotation & Clip Extractor</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- App Container -->
+  <div id="app" class="app-layout">
+
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-brand">
+        <div class="brand-logo">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <circle cx="12" cy="12" r="4"></circle>
+            <line x1="4.93" y1="4.93" x2="9.17" y2="9.17"></line>
+            <line x1="14.83" y1="14.83" x2="19.07" y2="19.07"></line>
+            <line x1="14.83" y1="9.17" x2="19.07" y2="4.93"></line>
+            <line x1="4.93" y1="19.07" x2="9.17" y2="14.83"></line>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h1 class="brand-title">Micro-Expression Annotator</h1>
+          <span class="brand-subtitle">High-Precision Facial Dynamics & Clip Extractor</span>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <div id="apiStatusBadge" class="status-badge checking">
+          <span class="status-dot"></span>
+          <span id="apiStatusText" class="status-label">Checking Backend...</span>
+        </div>
+        <button id="shortcutsHelpBtn" class="btn btn-icon" title="Keyboard Shortcuts (?)" aria-label="Keyboard Shortcuts">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Upload & Existing Videos Bar -->
+    <section class="top-control-bar">
+      <!-- Drag & Drop Upload Zone -->
+      <div id="uploadZone" class="upload-zone">
+        <input type="file" id="videoFileInput" accept="video/mp4,video/avi,video/quicktime,video/webm,video/x-matroska,.mp4,.avi,.mov,.webm,.mkv" class="file-input-hidden">
+        <div class="upload-prompt">
+          <svg class="upload-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="17 8 12 3 7 8"></polyline>
+            <line x1="12" y1="3" x2="12" y2="15"></line>
+          </svg>
+          <span class="upload-text"><strong>Drag & Drop video</strong> or <button type="button" id="browseVideoBtn" class="btn-link">Browse files</button></span>
+          <span class="upload-hint">(MP4, AVI, MOV, WebM, MKV)</span>
+        </div>
+        <div id="uploadProgressContainer" class="upload-progress-container hidden">
+          <div class="upload-progress-header">
+            <span id="uploadFileName" class="upload-filename">uploading...</span>
+            <span id="uploadPercent" class="upload-percent">0%</span>
+          </div>
+          <div class="progress-bar-track">
+            <div id="uploadProgressBar" class="progress-bar-fill" style="width: 0%;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Loaded Videos Dropdown / Selector -->
+      <div class="video-select-group">
+        <label for="videoListSelect" class="input-label">Select Video:</label>
+        <div class="select-wrapper">
+          <select id="videoListSelect" class="form-select" disabled>
+            <option value="">No videos loaded</option>
+          </select>
+          <button id="refreshVideosBtn" class="btn btn-icon btn-sm" title="Refresh video list" aria-label="Refresh video list">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="23 4 23 10 17 10"></polyline>
+              <polyline points="1 20 1 14 7 14"></polyline>
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Video Info Bar -->
+    <section id="videoInfoBar" class="video-info-bar hidden">
+      <div class="info-item">
+        <span class="info-label">File:</span>
+        <span id="infoFileName" class="info-val font-mono">-</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Resolution:</span>
+        <span id="infoResolution" class="info-val font-mono">-</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Framerate:</span>
+        <span id="infoFps" class="info-val font-mono">-</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Total Frames:</span>
+        <span id="infoTotalFrames" class="info-val font-mono">-</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Duration:</span>
+        <span id="infoDuration" class="info-val font-mono">-</span>
+      </div>
+    </section>
+
+    <!-- Main Workspace -->
+    <main class="main-workspace">
+
+      <!-- Left Column: Video Frame Viewport, Navigation, Timeline -->
+      <div class="workspace-viewport-column">
+
+        <!-- Viewport Mode Switcher & Sync Status -->
+        <div class="viewport-mode-bar">
+          <div class="view-mode-buttons" role="group" aria-label="Display Mode">
+            <button type="button" id="viewSplitBtn" class="btn btn-sm btn-mode active" title="Side-by-side: Video Player & Frame Inspector">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/></svg>
+              Split View
+            </button>
+            <button type="button" id="viewVideoOnlyBtn" class="btn btn-sm btn-mode" title="Continuous HTML5 Video Player">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              Video Player
+            </button>
+            <button type="button" id="viewInspectorOnlyBtn" class="btn btn-sm btn-mode" title="Exact Source Frame Inspector & ROI Crop">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="12" cy="12" r="3"/></svg>
+              Frame Inspector
+            </button>
+          </div>
+          <div class="viewport-sync-indicator">
+            <span class="sync-dot-live"></span>
+            <span id="syncStatusLabel">Continuous Playback & Frame Inspector Synced</span>
+          </div>
+        </div>
+
+        <!-- Main Dual-View Display Container -->
+        <div id="dualViewportContainer" class="dual-viewport-container mode-split">
+          
+          <!-- Video Player Panel -->
+          <div id="videoPlayerPanel" class="player-card">
+            <div class="card-mini-header">
+              <div class="header-tag">
+                <span class="tag-icon">▶</span>
+                <span class="tag-title">Video Player (Continuous Playback)</span>
+              </div>
+              <div class="header-meta font-mono">
+                <span id="videoPlaybackTime">00:00:00.000</span> / <span id="videoTotalTime">00:00:00.000</span>
+              </div>
+            </div>
+            <div class="video-wrapper">
+              <video id="videoPlayer"
+                     controls
+                     preload="metadata"
+                     playsinline
+                     class="html5-video-player">
+              </video>
+              
+              <!-- Video Loading Overlay -->
+              <div id="videoLoadingOverlay" class="player-overlay hidden">
+                <div class="spinner"></div>
+                <span>Buffering video stream...</span>
+              </div>
+
+              <!-- Video Error Overlay -->
+              <div id="videoErrorOverlay" class="player-overlay error-overlay hidden">
+                <div class="error-icon">⚠️</div>
+                <h4 class="error-title">Video Playback Notice</h4>
+                <p id="videoErrorMessage" class="error-desc">Browser cannot decode this video codec directly.</p>
+                <button type="button" id="convertPreviewBtn" class="btn btn-primary btn-sm">
+                  Transcode Browser Preview (H.264)
+                </button>
+              </div>
+
+              <!-- Empty Video Placeholder -->
+              <div id="emptyVideoPlaceholder" class="empty-video-placeholder">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect>
+                  <line x1="7" y1="2" x2="7" y2="22"></line>
+                  <line x1="17" y1="2" x2="17" y2="22"></line>
+                  <line x1="2" y1="12" x2="22" y2="12"></line>
+                  <line x1="2" y1="7" x2="7" y2="7"></line>
+                  <line x1="2" y1="17" x2="7" y2="17"></line>
+                  <line x1="17" y1="17" x2="22" y2="17"></line>
+                  <line x1="17" y1="7" x2="22" y2="7"></line>
+                </svg>
+                <p>Upload a video to start annotating micro-expressions</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Frame Inspector Panel -->
+          <div id="frameInspectorPanel" class="inspector-card">
+            <div class="card-mini-header">
+              <div class="header-tag">
+                <span class="tag-icon">🔬</span>
+                <span class="tag-title">Frame Inspector (Exact Source Frame)</span>
+              </div>
+              <div class="header-meta font-mono">
+                <span class="inspector-badge">Frame <span id="inspectorFrameDisplay">0</span></span>
+                <span id="inspectorFpsBadge" class="fps-badge">240 FPS</span>
+              </div>
+            </div>
+            <div id="canvasWrapper" class="canvas-wrapper">
+              <!-- Background Frame Canvas -->
+              <canvas id="videoCanvas" width="720" height="480"></canvas>
+              <!-- Interactive Crop Canvas Overlay -->
+              <canvas id="cropCanvas" width="720" height="480"></canvas>
+              <!-- Loading Spinner Overlay -->
+              <div id="frameLoadingOverlay" class="frame-loading-overlay hidden">
+                <div class="spinner"></div>
+                <span class="spinner-text">Extracting source frame...</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Frame Navigation Bar -->
+        <div class="frame-navigation-bar">
+          <div class="nav-button-group">
+            <button id="jumpBack100Btn" class="btn btn-secondary btn-nav" title="Back 100 frames (Shift + ←)" disabled>&laquo; 100</button>
+            <button id="jumpBack10Btn" class="btn btn-secondary btn-nav" title="Back 10 frames (Ctrl + ←)" disabled>&lsaquo; 10</button>
+            <button id="prevFrameBtn" class="btn btn-secondary btn-nav" title="Previous frame (←)" disabled>&larr; Prev</button>
+          </div>
+
+          <div class="nav-playback-group">
+            <button id="playPauseBtn" class="btn btn-primary btn-play" title="Play / Pause (Space)" disabled>
+              <svg id="playIcon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
+              <svg id="pauseIcon" class="hidden" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <rect x="6" y="4" width="4" height="16"></rect>
+                <rect x="14" y="4" width="4" height="16"></rect>
+              </svg>
+              <span id="playPauseText">Play</span>
+            </button>
+          </div>
+
+          <div class="nav-button-group">
+            <button id="nextFrameBtn" class="btn btn-secondary btn-nav" title="Next frame (→)" disabled>Next &rarr;</button>
+            <button id="jumpFwd10Btn" class="btn btn-secondary btn-nav" title="Forward 10 frames (Ctrl + →)" disabled>10 &rsaquo;</button>
+            <button id="jumpFwd100Btn" class="btn btn-secondary btn-nav" title="Forward 100 frames (Shift + →)" disabled>100 &raquo;</button>
+          </div>
+
+          <div class="nav-frame-indicator">
+            <label for="currentFrameInput" class="frame-label">Frame:</label>
+            <input type="number" id="currentFrameInput" class="form-input frame-number-input font-mono" min="0" value="0" disabled>
+            <span class="frame-total-text font-mono">/ <span id="totalFramesDisplay">0</span></span>
+          </div>
+
+          <div class="nav-timestamp-indicator">
+            <span class="timestamp-label">Time:</span>
+            <span id="currentTimestampDisplay" class="timestamp-display font-mono">00:00:00.000</span>
+          </div>
+        </div>
+
+        <!-- Interactive Timeline -->
+        <div id="timelineContainer" class="timeline-container">
+          <div class="timeline-header">
+            <div class="timeline-legend">
+              <span class="legend-item"><span class="legend-color onset-color"></span> Onset</span>
+              <span class="legend-item"><span class="legend-color apex-color"></span> Apex</span>
+              <span class="legend-item"><span class="legend-color offset-color"></span> Offset</span>
+              <span class="legend-item"><span class="legend-color range-color"></span> Expression Span</span>
+            </div>
+            <div class="timeline-info font-mono">
+              <span id="timelineSpanText">No annotations set</span>
+            </div>
+          </div>
+
+          <div class="timeline-track-wrapper">
+            <!-- Custom Timeline Canvas for markers & range span -->
+            <canvas id="timelineCanvas" class="timeline-canvas" height="36"></canvas>
+            <!-- Native Slider on top for smooth scrubbing -->
+            <input type="range" id="timelineSlider" class="timeline-slider" min="0" max="0" value="0" step="1" disabled>
+            <!-- Hover Tooltip -->
+            <div id="timelineTooltip" class="timeline-tooltip hidden font-mono">0</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right Column: Control Panels & Tabs -->
+      <div class="workspace-controls-column">
+        <!-- Tab Navigation -->
+        <nav class="tabs-nav" role="tablist">
+          <button class="tab-btn active" data-tab="annotations" role="tab" aria-selected="true">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 20h9"></path>
+              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+            </svg>
+            <span>Annotations</span>
+          </button>
+          <button class="tab-btn" data-tab="clip" role="tab" aria-selected="false">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect>
+              <line x1="7" y1="2" x2="7" y2="22"></line>
+              <line x1="17" y1="17" x2="17" y2="22"></line>
+              <line x1="2" y1="12" x2="22" y2="12"></line>
+            </svg>
+            <span>Clip Export</span>
+          </button>
+          <button class="tab-btn" data-tab="crop" role="tab" aria-selected="false">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M6 2v14a2 2 0 0 0 2 2h14"></path>
+              <path d="M18 22V8a2 2 0 0 0-2-2H2"></path>
+            </svg>
+            <span>Crop</span>
+          </button>
+          <button class="tab-btn" data-tab="enhance" role="tab" aria-selected="false">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+            </svg>
+            <span>Enhancement</span>
+          </button>
+          <button class="tab-btn" data-tab="export" role="tab" aria-selected="false">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            <span>Export</span>
+          </button>
+        </nav>
+
+        <!-- Tab Contents Container -->
+        <div class="tabs-content-container">
+
+          <!-- TAB 1: Annotations -->
+          <div id="tab-annotations" class="tab-pane active" role="tabpanel">
+            <div class="panel-section">
+              <h2 class="section-title">Micro-Expression Boundary Marking</h2>
+              <p class="section-desc">Mark the precise onset, apex, and offset frames for the target facial movement.</p>
+
+              <!-- Annotation Points Card List -->
+              <div class="annotation-cards-list">
+
+                <!-- Onset Card -->
+                <div id="onsetCard" class="annotation-card border-onset">
+                  <div class="card-header">
+                    <div class="card-label-group">
+                      <span class="marker-badge badge-onset">ONSET</span>
+                      <span class="card-title">Initial Movement</span>
+                    </div>
+                    <span id="onsetStatusBadge" class="status-pill unset">Unset</span>
+                  </div>
+                  <div class="card-body">
+                    <div class="card-values">
+                      <div class="card-input-item">
+                        <label class="input-micro-label">Frame:</label>
+                        <input type="number" id="onsetFrameInput" class="form-input form-input-sm font-mono" placeholder="-" min="0">
+                      </div>
+                      <div class="card-timestamp-item">
+                        <label class="input-micro-label">Timestamp:</label>
+                        <span id="onsetTimestampDisplay" class="font-mono text-muted">-</span>
+                      </div>
+                    </div>
+                    <div class="card-actions">
+                      <button id="setOnsetBtn" class="btn btn-onset btn-sm" title="Set current frame as Onset (O)">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        Set Current (O)
+                      </button>
+                      <button id="goToOnsetBtn" class="btn btn-secondary btn-sm" title="Jump to Onset Frame" disabled>Go to</button>
+                      <button id="clearOnsetBtn" class="btn btn-ghost btn-sm" title="Clear Onset point" disabled>&times;</button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Apex Card -->
+                <div id="apexCard" class="annotation-card border-apex">
+                  <div class="card-header">
+                    <div class="card-label-group">
+                      <span class="marker-badge badge-apex">APEX</span>
+                      <span class="card-title">Peak Intensity</span>
+                    </div>
+                    <span id="apexStatusBadge" class="status-pill unset">Unset</span>
+                  </div>
+                  <div class="card-body">
+                    <div class="card-values">
+                      <div class="card-input-item">
+                        <label class="input-micro-label">Frame:</label>
+                        <input type="number" id="apexFrameInput" class="form-input form-input-sm font-mono" placeholder="-" min="0">
+                      </div>
+                      <div class="card-timestamp-item">
+                        <label class="input-micro-label">Timestamp:</label>
+                        <span id="apexTimestampDisplay" class="font-mono text-muted">-</span>
+                      </div>
+                    </div>
+                    <div class="card-actions">
+                      <button id="setApexBtn" class="btn btn-apex btn-sm" title="Set current frame as Apex (A)">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        Set Current (A)
+                      </button>
+                      <button id="goToApexBtn" class="btn btn-secondary btn-sm" title="Jump to Apex Frame" disabled>Go to</button>
+                      <button id="clearApexBtn" class="btn btn-ghost btn-sm" title="Clear Apex point" disabled>&times;</button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Offset Card -->
+                <div id="offsetCard" class="annotation-card border-offset">
+                  <div class="card-header">
+                    <div class="card-label-group">
+                      <span class="marker-badge badge-offset">OFFSET</span>
+                      <span class="card-title">Return to Neutral</span>
+                    </div>
+                    <span id="offsetStatusBadge" class="status-pill unset">Unset</span>
+                  </div>
+                  <div class="card-body">
+                    <div class="card-values">
+                      <div class="card-input-item">
+                        <label class="input-micro-label">Frame:</label>
+                        <input type="number" id="offsetFrameInput" class="form-input form-input-sm font-mono" placeholder="-" min="0">
+                      </div>
+                      <div class="card-timestamp-item">
+                        <label class="input-micro-label">Timestamp:</label>
+                        <span id="offsetTimestampDisplay" class="font-mono text-muted">-</span>
+                      </div>
+                    </div>
+                    <div class="card-actions">
+                      <button id="setOffsetBtn" class="btn btn-offset btn-sm" title="Set current frame as Offset (F)">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        Set Current (F)
+                      </button>
+                      <button id="goToOffsetBtn" class="btn btn-secondary btn-sm" title="Jump to Offset Frame" disabled>Go to</button>
+                      <button id="clearOffsetBtn" class="btn btn-ghost btn-sm" title="Clear Offset point" disabled>&times;</button>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+              <!-- Validation Feedback & Duration Metrics -->
+              <div id="annotationMetricsBox" class="metrics-card">
+                <div class="metrics-row">
+                  <span class="metrics-label">Total Duration:</span>
+                  <span id="metricDurationFrames" class="metrics-val font-mono">- frames</span>
+                  <span id="metricDurationMs" class="metrics-val text-muted font-mono">(- ms)</span>
+                </div>
+                <div class="metrics-row">
+                  <span class="metrics-label">Onset &rarr; Apex:</span>
+                  <span id="metricOnsetApex" class="metrics-val font-mono">- frames</span>
+                </div>
+                <div class="metrics-row">
+                  <span class="metrics-label">Apex &rarr; Offset:</span>
+                  <span id="metricApexOffset" class="metrics-val font-mono">- frames</span>
+                </div>
+                <div id="annotationValidationAlert" class="validation-alert info">
+                  <span class="alert-icon">ℹ</span>
+                  <span id="annotationValidationMsg" class="alert-text">Mark Onset, Apex, and Offset to validate micro-expression bounds.</span>
+                </div>
+              </div>
+
+              <!-- Action Bar -->
+              <div class="panel-button-row">
+                <button id="saveAnnotationsBtn" class="btn btn-primary" disabled>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                  Save Annotations
+                </button>
+                <button id="loadAnnotationsBtn" class="btn btn-secondary" disabled>Reload</button>
+                <button id="clearAllAnnotationsBtn" class="btn btn-ghost" disabled>Clear All</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 2: Clip Extractor -->
+          <div id="tab-clip" class="tab-pane" role="tabpanel">
+            <div class="panel-section">
+              <h2 class="section-title">Video Clip Extractor</h2>
+              <p class="section-desc">Extract a lossless temporal segment around the annotated micro-expression.</p>
+
+              <!-- Range Summary Notice -->
+              <div class="clip-range-banner">
+                <div class="range-banner-title">Annotated Range:</div>
+                <div id="clipRangeText" class="range-banner-content font-mono">Onset and Offset not yet set</div>
+                <div class="range-banner-note">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                  <span>Offset is inclusive. Both onset and offset frames are included in extracted clips.</span>
+                </div>
+              </div>
+
+              <!-- Context Frames Inputs -->
+              <div class="form-row">
+                <div class="form-group col-6">
+                  <label for="clipContextBefore" class="form-label">Context Before (frames):</label>
+                  <input type="number" id="clipContextBefore" class="form-input font-mono" min="0" value="0">
+                  <span class="form-hint">Frames padded before Onset</span>
+                </div>
+                <div class="form-group col-6">
+                  <label for="clipContextAfter" class="form-label">Context After (frames):</label>
+                  <input type="number" id="clipContextAfter" class="form-input font-mono" min="0" value="0">
+                  <span class="form-hint">Frames padded after Offset</span>
+                </div>
+              </div>
+
+              <!-- Metadata Inputs -->
+              <div class="form-row">
+                <div class="form-group col-6">
+                  <label for="clipParticipantId" class="form-label">Participant ID:</label>
+                  <input type="text" id="clipParticipantId" class="form-input" placeholder="e.g. participant_001">
+                </div>
+                <div class="form-group col-6">
+                  <label for="clipVideoLabel" class="form-label">Video Label / Emotion:</label>
+                  <input type="text" id="clipVideoLabel" class="form-input" placeholder="e.g. surprise_01">
+                </div>
+              </div>
+
+              <!-- Extraction Trigger -->
+              <div class="panel-button-row">
+                <button id="extractClipBtn" class="btn btn-primary btn-block" disabled>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                  Extract Clip
+                </button>
+              </div>
+
+              <!-- Extraction Progress -->
+              <div id="clipExtractionProgress" class="extraction-progress hidden">
+                <div class="progress-status-row">
+                  <span id="clipProgressStatusText">Extracting clip on backend...</span>
+                  <div class="spinner-sm"></div>
+                </div>
+                <div class="progress-bar-track">
+                  <div id="clipProgressBar" class="progress-bar-fill animated-stripes" style="width: 100%;"></div>
+                </div>
+              </div>
+
+              <!-- Extracted Clip Result & Preview Card -->
+              <div id="clipResultCard" class="clip-result-card hidden">
+                <div class="result-header">
+                  <span class="result-badge success">Extraction Complete</span>
+                  <span id="clipResultId" class="clip-id font-mono">Clip #1</span>
+                </div>
+
+                <div class="clip-preview-container">
+                  <video id="clipPreviewVideo" controls playsinline class="clip-video-player"></video>
+                </div>
+
+                <div class="clip-metadata-grid font-mono">
+                  <div class="meta-item"><span class="meta-label">Frames:</span> <span id="clipMetaFrames">-</span></div>
+                  <div class="meta-item"><span class="meta-label">Duration:</span> <span id="clipMetaDuration">-</span></div>
+                  <div class="meta-item"><span class="meta-label">FPS:</span> <span id="clipMetaFps">-</span></div>
+                  <div class="meta-item"><span class="meta-label">Resolution:</span> <span id="clipMetaResolution">-</span></div>
+                </div>
+
+                <div class="result-actions">
+                  <a id="downloadClipLink" class="btn btn-primary" download>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    Download Clip (.mp4)
+                  </a>
+                  <button id="reextractClipBtn" class="btn btn-secondary">Re-extract</button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- TAB 3: Crop Tool -->
+          <div id="tab-crop" class="tab-pane" role="tabpanel">
+            <div class="panel-section">
+              <h2 class="section-title">Facial Region Crop Tool</h2>
+              <p class="section-desc">Drag or resize the crop rectangle directly on the video frame, or use automated facial detector presets.</p>
+
+              <!-- Automated Detection & Presets -->
+              <div class="crop-preset-group">
+                <span class="group-label">Automatic Detection:</span>
+                <button id="autoDetectFaceBtn" class="btn btn-primary btn-sm" disabled>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line></svg>
+                  Auto-Detect Face
+                </button>
+              </div>
+
+              <div class="crop-preset-group">
+                <span class="group-label">Region Presets:</span>
+                <div class="preset-buttons">
+                  <button class="btn btn-secondary btn-sm crop-preset-btn" data-preset="full_face" disabled>Full Face</button>
+                  <button class="btn btn-secondary btn-sm crop-preset-btn" data-preset="eyes" disabled>Eyes</button>
+                  <button class="btn btn-secondary btn-sm crop-preset-btn" data-preset="eyebrows" disabled>Eyebrows</button>
+                  <button class="btn btn-secondary btn-sm crop-preset-btn" data-preset="mouth" disabled>Mouth</button>
+                </div>
+              </div>
+
+              <!-- Crop Coordinates -->
+              <div class="crop-coordinates-grid">
+                <div class="form-group col-3">
+                  <label class="form-label" for="cropCoordX">X:</label>
+                  <input type="number" id="cropCoordX" class="form-input form-input-sm font-mono" min="0" value="0">
+                </div>
+                <div class="form-group col-3">
+                  <label class="form-label" for="cropCoordY">Y:</label>
+                  <input type="number" id="cropCoordY" class="form-input form-input-sm font-mono" min="0" value="0">
+                </div>
+                <div class="form-group col-3">
+                  <label class="form-label" for="cropCoordW">Width:</label>
+                  <input type="number" id="cropCoordW" class="form-input form-input-sm font-mono" min="1" value="200">
+                </div>
+                <div class="form-group col-3">
+                  <label class="form-label" for="cropCoordH">Height:</label>
+                  <input type="number" id="cropCoordH" class="form-input form-input-sm font-mono" min="1" value="200">
+                </div>
+              </div>
+
+              <!-- Crop Output Options -->
+              <div class="form-row">
+                <div class="form-group col-6">
+                  <label class="form-label">Format:</label>
+                  <div class="radio-toggle-group">
+                    <label class="radio-label">
+                      <input type="radio" name="cropFormat" value="jpg" checked>
+                      <span>JPEG (.jpg)</span>
+                    </label>
+                    <label class="radio-label">
+                      <input type="radio" name="cropFormat" value="png">
+                      <span>PNG (.png)</span>
+                    </label>
+                  </div>
+                </div>
+                <div class="form-group col-6">
+                  <label class="form-label">Overlay Display:</label>
+                  <button id="toggleCropOverlayBtn" class="btn btn-secondary btn-sm btn-block">Toggle Crop Box</button>
+                </div>
+              </div>
+
+              <!-- Preview Canvas for Crop -->
+              <div class="crop-preview-box">
+                <div class="crop-preview-title">Real-time Crop Preview</div>
+                <div class="crop-preview-canvas-container">
+                  <canvas id="cropPreviewCanvas" width="220" height="220"></canvas>
+                </div>
+              </div>
+
+              <!-- Crop Actions -->
+              <div class="panel-button-row">
+                <button id="saveCropBtn" class="btn btn-primary" disabled>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path></svg>
+                  Save Current Crop
+                </button>
+                <button id="applyCropToAllBtn" class="btn btn-secondary" disabled title="Crop Onset, Apex, and Offset frames">
+                  Apply to All Annotation Frames
+                </button>
+              </div>
+
+              <div id="cropStatusAlert" class="validation-alert info hidden">
+                <span class="alert-icon">✓</span>
+                <span id="cropStatusText" class="alert-text">Crop ready.</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 4: Enhancement (Super-Resolution) -->
+          <div id="tab-enhance" class="tab-pane" role="tabpanel">
+            <div class="panel-section">
+              <h2 class="section-title">AI Super-Resolution Enhancement</h2>
+              <p class="section-desc">Upscale subtle facial regions using high-fidelity deep learning super-resolution.</p>
+
+              <!-- Super-Resolution Availability Banner -->
+              <div id="enhanceStatusBanner" class="enhance-banner checking">
+                <div class="banner-status-icon">
+                  <div class="spinner-sm"></div>
+                </div>
+                <div class="banner-body">
+                  <div id="enhanceBannerTitle" class="banner-title">Checking Enhancement Engine...</div>
+                  <div id="enhanceBannerDesc" class="banner-desc">Querying /api/enhance/status</div>
+                </div>
+              </div>
+
+              <!-- Enhancement Controls (active when available) -->
+              <div id="enhanceControlsWrapper" class="enhance-controls-wrapper disabled-opacity">
+                <!-- Scale Selector -->
+                <div class="form-group">
+                  <label class="form-label">Magnification Scale:</label>
+                  <div class="scale-radio-group">
+                    <label class="scale-pill">
+                      <input type="radio" name="enhanceScale" value="2" checked disabled>
+                      <span class="scale-pill-label">2&times; Super-Resolution</span>
+                    </label>
+                    <label class="scale-pill">
+                      <input type="radio" name="enhanceScale" value="4" disabled>
+                      <span class="scale-pill-label">4&times; Super-Resolution</span>
+                    </label>
+                  </div>
+                </div>
+
+                <!-- Action Button -->
+                <div class="panel-button-row">
+                  <button id="enhanceCurrentFrameBtn" class="btn btn-primary btn-block" disabled>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                    Enhance Current Frame
+                  </button>
+                </div>
+
+                <!-- Enhancement Progress Bar -->
+                <div id="enhanceProgressBarContainer" class="enhance-progress-container hidden">
+                  <div class="progress-status-row">
+                    <span id="enhanceProgressStatusText">Upscaling frame with AI model...</span>
+                    <div class="spinner-sm"></div>
+                  </div>
+                  <div class="progress-bar-track">
+                    <div id="enhanceProgressBar" class="progress-bar-fill animated-stripes" style="width: 100%;"></div>
+                  </div>
+                </div>
+
+                <!-- Scientific Integrity Warning Notice -->
+                <div class="research-warning-box">
+                  <span class="warning-icon">⚠️</span>
+                  <div class="warning-text">
+                    <strong>AI-Upscaled Notice:</strong> Super-resolution synthesizes plausible high-frequency details. It does NOT recover authentic underlying ground-truth data absent from the original sensor capture. Use caution for biometric inference.
+                  </div>
+                </div>
+
+                <!-- Side-by-Side Comparison Container -->
+                <div id="enhanceComparisonContainer" class="comparison-container hidden">
+                  <div class="comparison-header">
+                    <span class="comparison-title">Frame Comparison</span>
+                    <div class="comparison-mode-toggles">
+                      <button id="toggleSplitViewBtn" class="btn btn-ghost btn-sm active">Side-by-Side</button>
+                    </div>
+                  </div>
+
+                  <div class="comparison-viewport">
+                    <div class="compare-side">
+                      <div class="side-label">Original Frame</div>
+                      <div class="compare-canvas-box">
+                        <canvas id="enhanceOriginalCanvas" width="220" height="220"></canvas>
+                      </div>
+                    </div>
+                    <div class="compare-side">
+                      <div class="side-label">AI-Enhanced Frame</div>
+                      <div class="compare-canvas-box">
+                        <canvas id="enhanceResultCanvas" width="220" height="220"></canvas>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="comparison-actions">
+                    <button id="saveEnhancedFrameBtn" class="btn btn-primary btn-sm">Save Enhanced Frame</button>
+                    <button id="enhanceAllCropsBtn" class="btn btn-secondary btn-sm" disabled>Enhance All Cropped Frames</button>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- TAB 5: Export Panel -->
+          <div id="tab-export" class="tab-pane" role="tabpanel">
+            <div class="panel-section">
+              <h2 class="section-title">Dataset & Annotation Export</h2>
+              <p class="section-desc">Export annotated clips, crops, and structured scientific metadata according to research benchmark standards.</p>
+
+              <!-- Dataset Metadata Form -->
+              <div class="form-row">
+                <div class="form-group col-6">
+                  <label for="exportParticipantId" class="form-label">Participant ID:</label>
+                  <input type="text" id="exportParticipantId" class="form-input" placeholder="participant_001">
+                  <span class="form-hint">Standard format: participant_XXX</span>
+                </div>
+                <div class="form-group col-6">
+                  <label for="exportVideoLabel" class="form-label">Video / Emotion Label:</label>
+                  <input type="text" id="exportVideoLabel" class="form-input" placeholder="e.g. happiness_micro_01">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Output Directory:</label>
+                <div class="input-with-copy">
+                  <input type="text" id="exportOutputDir" class="form-input font-mono text-muted" value="./dataset/" readonly>
+                  <button id="copyPathBtn" class="btn btn-secondary btn-sm" title="Copy dataset path">Copy</button>
+                </div>
+              </div>
+
+              <!-- Export Components Selection -->
+              <div class="form-group">
+                <label class="form-label">Export Components:</label>
+                <div class="export-checkbox-grid">
+                  <label class="checkbox-label">
+                    <input type="checkbox" id="chkExportOriginalFrames" checked>
+                    <span class="checkbox-text">Original annotation frames (Onset, Apex, Offset)</span>
+                  </label>
+                  <label class="checkbox-label">
+                    <input type="checkbox" id="chkExportCroppedFrames" checked>
+                    <span class="checkbox-text">Cropped facial region frames</span>
+                  </label>
+                  <label class="checkbox-label" id="lblExportEnhanced">
+                    <input type="checkbox" id="chkExportEnhancedFrames" disabled>
+                    <span class="checkbox-text">Enhanced / Super-resolved frames</span>
+                  </label>
+                  <label class="checkbox-label">
+                    <input type="checkbox" id="chkExportClip" checked>
+                    <span class="checkbox-text">Extracted temporal video clip (.mp4)</span>
+                  </label>
+                  <label class="checkbox-label">
+                    <input type="checkbox" id="chkExportMetadata" checked>
+                    <span class="checkbox-text">Standardized metadata JSON (annotation labels & specs)</span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Export Trigger -->
+              <div class="panel-button-row">
+                <button id="exportFullDatasetBtn" class="btn btn-primary btn-block" disabled>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                  Export Full Dataset
+                </button>
+              </div>
+
+              <!-- Export Progress Steps -->
+              <div id="exportProgressContainer" class="export-progress-card hidden">
+                <div class="export-steps-header">
+                  <span id="exportProgressTitle">Exporting Dataset...</span>
+                  <div class="spinner-sm"></div>
+                </div>
+                <div class="progress-bar-track">
+                  <div id="exportProgressBar" class="progress-bar-fill" style="width: 0%;"></div>
+                </div>
+                <div id="exportStepsList" class="export-steps-list">
+                  <div class="step-item" id="step-frames"><span class="step-dot"></span> Exporting Annotation Frames</div>
+                  <div class="step-item" id="step-crop"><span class="step-dot"></span> Generating Facial Region Crops</div>
+                  <div class="step-item" id="step-clip"><span class="step-dot"></span> Extracting Lossless Temporal Clip</div>
+                  <div class="step-item" id="step-meta"><span class="step-dot"></span> Compiling Metadata & Manifests</div>
+                </div>
+              </div>
+
+              <!-- Export Summary Result Card -->
+              <div id="exportSummaryCard" class="export-summary-card hidden">
+                <div class="summary-header">
+                  <span class="summary-badge">✓ Export Succeeded</span>
+                  <span id="exportTimestamp" class="font-mono text-muted">-</span>
+                </div>
+                <div id="exportSummaryContent" class="summary-content font-mono">
+                  <!-- Injected dynamically -->
+                </div>
+                <div class="summary-footer">
+                  <button id="openDatasetLocationBtn" class="btn btn-secondary btn-sm">Copy Dataset Folder Path</button>
+                  <button id="dismissExportSummaryBtn" class="btn btn-ghost btn-sm">Dismiss</button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </main>
+
+    <!-- Bottom Status Bar -->
+    <footer class="app-status-bar">
+      <div class="status-left">
+        <span id="statusIndicatorDot" class="status-dot-indicator ready"></span>
+        <span id="appStatusMessage" class="status-text">Ready. Please upload or select a video.</span>
+      </div>
+      <div class="status-right font-mono">
+        <span id="currentStatusVideo">No Video Loaded</span>
+        <span class="separator">|</span>
+        <span id="cacheStatusText">Cache: 0 frames</span>
+        <span class="separator">|</span>
+        <span>Micro-Expression Extractor v1.0</span>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- Keyboard Shortcuts Modal -->
+  <div id="shortcutsModal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">Keyboard Navigation & Shortcuts</h3>
+        <button id="closeShortcutsModalBtn" class="modal-close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <table class="shortcuts-table">
+          <thead>
+            <tr><th>Shortcut</th><th>Action</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><kbd>&larr;</kbd> / <kbd>&rarr;</kbd></td><td>Step -1 / +1 Frame</td></tr>
+            <tr><td><kbd>Ctrl</kbd> + <kbd>&larr;</kbd> / <kbd>&rarr;</kbd></td><td>Jump -10 / +10 Frames</td></tr>
+            <tr><td><kbd>Shift</kbd> + <kbd>&larr;</kbd> / <kbd>&rarr;</kbd></td><td>Jump -100 / +100 Frames</td></tr>
+            <tr><td><kbd>Space</kbd></td><td>Toggle Play / Pause Stepping</td></tr>
+            <tr><td><kbd>O</kbd></td><td>Set Current Frame as Onset</td></tr>
+            <tr><td><kbd>A</kbd></td><td>Set Current Frame as Apex</td></tr>
+            <tr><td><kbd>F</kbd></td><td>Set Current Frame as Offset</td></tr>
+            <tr><td><kbd>?</kbd></td><td>Open Keyboard Shortcuts Help</td></tr>
+            <tr><td><kbd>Esc</kbd></td><td>Close Modal / Clear Selection</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notifications Container -->
+  <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+  <!-- Scripts in dependency order -->
+  <script src="js/video-player.js"></script>
+  <script src="js/timeline.js"></script>
+  <script src="js/annotations.js"></script>
+  <script src="js/clip-extractor.js"></script>
+  <script src="js/crop-tool.js"></script>
+  <script src="js/enhancement.js"></script>
+  <script src="js/export.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
