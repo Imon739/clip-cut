@@ -22,87 +22,6 @@ A locally hosted, high-precision tool designed for computer vision and affective
 
 ---
 
-## Prerequisites
-
-- **Operating System**: Windows 10/11 (or Linux / macOS)
-- **Python**: Python 3.10 or higher
-- **FFmpeg**: Required in system `PATH` for video demuxing, frame extraction, and clip encoding
-
----
-
-## FFmpeg Installation (Windows)
-
-Choose any one of the following methods to install FFmpeg on Windows:
-
-### Method 1: Using Windows Package Manager (`winget`) (Recommended)
-Open PowerShell or Command Prompt as Administrator and run:
-```powershell
-winget install Gyan.FFmpeg
-```
-Restart your terminal after installation so environment variables are refreshed.
-
-### Method 2: Using Scoop
-If you use the [Scoop](https://scoop.sh/) package manager:
-```powershell
-scoop install ffmpeg
-```
-
-### Method 3: Manual Installation
-1. Download the release build archive from [Gyan.dev FFmpeg Builds](https://www.gyan.dev/ffmpeg/builds/) (e.g., `ffmpeg-release-essentials.zip`).
-2. Extract the archive to a permanent folder, for example `C:\ffmpeg`.
-3. Add `C:\ffmpeg\bin` to your System `PATH`:
-   - Press <kbd>Win</kbd> + <kbd>R</kbd>, type `sysdm.cpl`, press <kbd>Enter</kbd>.
-   - Go to the **Advanced** tab and click **Environment Variables**.
-   - Under **User variables** or **System variables**, locate `Path` and click **Edit**.
-   - Click **New** and paste `C:\ffmpeg\bin`.
-   - Click **OK** on all dialogs.
-4. Verify by opening a new Command Prompt and typing:
-   ```cmd
-   ffmpeg -version
-   ```
-
----
-
-## Quick Start
-
-### Option A: Automated One-Click Start (Windows)
-Double-click `start.bat` or run it from the command line:
-```cmd
-start.bat
-```
-This batch script automatically:
-1. Validates Python (3.10+) and checks for FFmpeg.
-2. Initializes the virtual environment (`.venv`) if not present.
-3. Installs or upgrades dependencies from `requirements.txt`.
-4. Launches the FastAPI backend server on `http://127.0.0.1:8000`.
-5. Automatically opens your default web browser to the application interface.
-
-### Option B: Manual Setup
-1. **Create and activate a virtual environment**:
-   ```bash
-   python -m venv .venv
-   # Windows (CMD / PowerShell):
-   .venv\Scripts\activate
-   # Linux / macOS:
-   source .venv/bin/activate
-   ```
-
-2. **Install dependencies**:
-   ```bash
-   pip install --upgrade pip
-   pip install -r requirements.txt
-   ```
-
-3. **Start the application**:
-   ```bash
-   python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload
-   ```
-
-4. **Access the application**:
-   Open [http://127.0.0.1:8000](http://127.0.0.1:8000) in your web browser.
-
----
-
 ## Usage Guide
 
 1. **Upload / Select Video**:
@@ -146,29 +65,6 @@ This batch script automatically:
 | <kbd>+</kbd> / <kbd>-</kbd> | **Speed Adjustment** | Increase / decrease playback speed |
 
 ---
-
-## Dataset Output Structure
-
-Each extraction produces a structured output folder suitable for direct ingestion into machine learning training pipelines:
-
-```
-data/
-└── outputs/
-    └── participant_001/
-        └── clip_a1b2c3d4_f1024-f1152/
-            ├── metadata.json
-            ├── clip_a1b2c3d4_f1024-f1152.mp4
-            ├── original_frames/
-            │   ├── frame_001024.png
-            │   ├── frame_001087.png
-            │   └── frame_001152.png
-            ├── cropped_frames/
-            │   ├── frame_001024_cropped.png
-            │   ├── frame_001087_cropped.png
-            │   └── frame_001152_cropped.png
-            └── enhanced_frames/
-                └── frame_001024_enhanced_2x.png (optional)
-```
 
 ### Metadata Format (`metadata.json`)
 
