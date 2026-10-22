@@ -493,12 +493,12 @@ class VideoPlayer {
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
     this.ctx.fillStyle = '#e94560';
-    this.ctx.font = '14px JetBrains Mono, monospace';
+    this.ctx.font = '14px "Roboto Mono", monospace';
     this.ctx.textAlign = 'center';
     this.ctx.fillText(`Frame ${frameNumber} Unavailable`, this.canvas.width / 2, this.canvas.height / 2 - 10);
 
     this.ctx.fillStyle = '#94a3b8';
-    this.ctx.font = '12px Inter, sans-serif';
+    this.ctx.font = '12px Roboto, sans-serif';
     this.ctx.fillText(message || 'Failed to fetch from backend', this.canvas.width / 2, this.canvas.height / 2 + 15);
   }
 

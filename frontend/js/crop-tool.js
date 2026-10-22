@@ -443,7 +443,7 @@ class CropTool {
 
     // 4. Coordinates & Dimensions Tag
     const tagText = `${Math.round(this.crop.width)} × ${Math.round(this.crop.height)}`;
-    this.ctx.font = '11px JetBrains Mono, monospace';
+    this.ctx.font = '11px "Roboto Mono", monospace';
     this.ctx.fillStyle = 'rgba(22, 33, 62, 0.85)';
     const textW = this.ctx.measureText(tagText).width + 8;
     this.ctx.fillRect(r.x, Math.max(0, r.y - 18), textW, 16);

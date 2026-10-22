@@ -340,7 +340,7 @@ class Timeline {
 
     // Small label text inside or beside
     ctx.fillStyle = color === '#FFC107' ? '#1a1a2e' : '#ffffff';
-    ctx.font = 'bold 8px Inter, sans-serif';
+    ctx.font = 'bold 8px Roboto, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(label, x, tagY);

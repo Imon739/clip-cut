@@ -106,6 +106,8 @@ if os.path.isdir(os.path.join(FRONTEND_DIR, 'css')):
     app.mount("/css", StaticFiles(directory=os.path.join(FRONTEND_DIR, 'css')), name="css")
 if os.path.isdir(os.path.join(FRONTEND_DIR, 'js')):
     app.mount("/js", StaticFiles(directory=os.path.join(FRONTEND_DIR, 'js')), name="js")
+if os.path.isdir(os.path.join(FRONTEND_DIR, 'assets')):
+    app.mount("/assets", StaticFiles(directory=os.path.join(FRONTEND_DIR, 'assets')), name="assets")
 
 
 from fastapi import HTTPException
