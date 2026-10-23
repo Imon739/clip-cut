@@ -4,7 +4,7 @@ A locally hosted, high-precision tool designed for computer vision and affective
 
 ---
 
-![clipora](clipora.png)
+![clipora](Clipora.png)
 
 ## Features
 
