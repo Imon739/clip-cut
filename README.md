@@ -4,6 +4,8 @@ A locally hosted, high-precision tool designed for computer vision and affective
 
 ---
 
+![clipora](clipora.png)
+
 ## Features
 
 - **Frame-Accurate Video Scrubbing & Playback**: Navigate video streams frame-by-frame with zero frame-drift, sub-second timeline scrubbing, and variable playback speeds (0.1x to 2.0x).
